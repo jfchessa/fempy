@@ -6,8 +6,51 @@ import prop
 import element as elem
 import bcs
 
-import pdb
+#import pdb
 
+class GmshElement(object):
+    
+    def __init__(self, line):
+        fields = line.split(' ')
+        self.eid = int( fields[0] )
+        self.etype = int( fields[1] )
+        ntags = int( fields[2] )
+        self.tags = [ ]
+        self.physid = int( fields[3] )
+        self.geomid = int( fields[4] )
+        self.partitions = []
+        i=5
+        if (ntags > 2):
+            npart = int( fields[i] )
+            i+=1
+            while i<6+npart:
+                self.partitions.append( int( fields[i] ) )
+                i+=1
+        self.conn = []
+        while i<len(fields):
+            self.conn.append( int( fields[i] ) )
+            i+=1
+            
+    def ConvertElement(self):
+        if self.etype == 1:
+            return elem.ElemLine2(self.conn,self.physid)
+            
+        elif self.etype == 2:
+            return elem.ElemTria3(self.conn,self.physid)
+            
+        elif self.etype == 3:
+            return elem.ElemQuad4(self.conn,self.physid)
+            
+        elif self.etype == 4:
+            return elem.ElemTetra4(self.conn,self.physid)
+            
+        elif self.etype == 5:
+            return elem.ElemElemHexa8(self.conn,self.physid)
+            
+        else:
+            print 'Element type not supported in GmshElement.ConvertElement'
+            return 0 
+            
 class GmshInput(object):
     
     def __init__(self,fname=None):
@@ -15,8 +58,37 @@ class GmshInput(object):
         self.PhysIDs = set()
         self.NodeSetIDs = set()
         self.SideSetIDs = set()
-       
-     
+        
+    def AddPhysicalIDs(self,ids):
+        for pid in ids:
+            self.PhysIDs.add(int(ids))
+      
+    def PhysicalIDs(self,pids):
+        
+        f = open( self.Filename, 'r' )
+        
+        e = -2
+        numElem = 0
+        for line in f:
+            if ( line[0:9] == '$Elements' ):
+                e = -1
+            elif (line[0:12] == '$EndElements'):
+                e = -2
+            elif  e==-1:
+                numElem = int(line)
+                e = 0
+            elif e >= 0:
+                elem = GmshElement(line)
+                try:
+                    pids.add( elem.physid )
+                except:
+                    print 'Error in adding physical id to set in GmshInput.PhysicalIDs'
+                    return
+
+            if e>numElem:
+                return
+                    
+                    
     #def FieldInt(self,i,line):
     #    try:
     #        return int( line[8*(i-1):8*i] )
@@ -59,90 +131,42 @@ class GmshInput(object):
     #        self.nmap[n] = nn
     #        nn = nn + 1
         
-    def ReadElements(self):
-        f = open( self.filename, 'r' )
+    def ReadElements(self,elements):
+        f = open( self.Filename, 'r' )
+        
+        if ( len(self.PhysIDs) == 0 ):
+            AllPIDs = True 
+        else:
+            ALLPIDs = False
         
         for line in f:
-            print line
-            #line = line.ljust(80)
-            #if ( line[:4] == 'CROD' ):
-            #    eid = self.FieldInt(2,line)
-            #    pid = self.FieldInt(3,line)
-            #    n1  = self.FieldInt(4,line)
-            #    n2  = self.FieldInt(5,line)
-            #    self.element.append( elem.ElemLine2( \
-            #        np.array( [n1,n2],basic.INDX_TYPE), prop=pid ) )
-            #          
-            #elif ( line[:4] == 'CBAR' ):
-            #    eid = self.FieldInt(2,line)
-            #    pid = self.FieldInt(3,line)
-            #    n1  = self.FieldInt(4,line)
-            #    n2  = self.FieldInt(5,line)
-            #    self.element.append( elem.ElemLine2( \
-            #        np.array( [n1,n2],basic.INDX_TYPE), prop=pid ) )
-            #    v1 = self.FieldFloat(6,line)
-            #    v2 = self.FieldFloat(7,line)
-            #    v3 = self.FieldFloat(8,line)
-            #          
-            #elif ( line[:6] == 'CTRIA3' ):
-            #    eid = self.FieldInt(2,line)
-            #    pid = self.FieldInt(3,line)
-            #    n1  = self.FieldInt(4,line)
-            #    n2  = self.FieldInt(5,line)
-            #    n3  = self.FieldInt(6,line)
-            #    self.element.append( elem.ElemTria3( \
-            #        np.array([n1,n2,n3],basic.INDX_TYPE), prop=pid ) )
-            #          
-            #elif ( line[:6] == 'CQUAD4' ):
-            #    eid = self.FieldInt(2,line)
-            #    pid = self.FieldInt(3,line)
-            #    n1  = self.FieldInt(4,line)
-            #    n2  = self.FieldInt(5,line)
-            #    n3  = self.FieldInt(6,line)
-            #    n4  = self.FieldInt(7,line)
-            #    self.element.append( elem.ElemQuad4( np.array( \
-            #          [n1,n2,n3,n4],basic.INDX_TYPE), prop=pid ) )
-            #                
-            #elif ( line[:6] == 'CTETRA' ):
-            #    eid = self.FieldInt(2,line)
-            #    pid = self.FieldInt(3,line)
-            #    n1  = self.FieldInt(4,line)
-            #    n2  = self.FieldInt(5,line)
-            #    n3  = self.FieldInt(6,line)
-            #    n4  = self.FieldInt(7,line)
-            #    self.element.append( elem.ElemTetra4(np.array( \
-            #          [n1,n2,n3,n4],basic.INDX_TYPE), prop=pid ) )
-            #          
-            #elif ( line[:5] == 'CHEXA' ):
-            #    line = line + f.next()
-            #    l2 = f.next().ljust(80)[8:]
-            #    line = line+l2
-            #    eid = self.FieldInt(2,line)
-            #    pid = self.FieldInt(3,line)
-            #    n1  = self.FieldInt(4,line)
-            #    n2  = self.FieldInt(5,line)
-            #    n3  = self.FieldInt(6,line)
-            #    n4  = self.FieldInt(7,line)
-            #    n5  = self.FieldInt(8,line)
-            #    n6  = self.FieldInt(9,line)
-            #    n7  = self.FieldInt(10,line)
-            #    n8  = self.FieldInt(11,line)
-            #    self.element.append( elem.ElemHexa8( np.array( \
-            #          [n1,n2,n3,n4,n5,n6,n7,n8],basic.INDX_TYPE), \
-            #           prop=pid ) )      
-
+            
+            e = -2
+            numElem = 0
+            for line in f:
+                if ( line[0:9] == '$Elements' ):
+                    e = -1
+                elif (line[0:12] == '$EndElements'):
+                    e = -2
+                elif  e==-1:
+                    numElem = int(line)
+                    e = 0
+                elif e >= 0:
+                    elem = GmshElement(line)
+                    if ( (elem.physid in self.PhysIDs) or AllPIDs ):
+                        elements.append( elem.ConvertElement() )
+                    e += 1
+                if e>numElem:
+                    return
+                    
 
    
     
 # ---------------------
-#nasfile = NastranInput('quad4.bdf')
-#nasfile.ReadMaterials()
-#nasfile.ReadProperties()
-#nasfile.ReadNodes()
-#nasfile.ReadElements()
-#nasfile.ReadSPCs()
-#nasfile.ReadForces()
-#
-#nasfile.Renumber()
-#        
+gmshfile = GmshInput('channel.msh')
+pids = set()
+gmshfile.PhysicalIDs(pids)  
+#gmshfile.
+elements=[]
+gmshfile.ReadElements(elements)      
     
