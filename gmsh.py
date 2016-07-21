@@ -60,10 +60,30 @@ class GmshInput(object):
         self.SideSetIDs = set()
         
     def AddPhysicalIDs(self,ids):
-        for pid in ids:
+        try:
+            for pid in ids:
+                self.PhysIDs.add(int(pid))
+        except TypeError:
             self.PhysIDs.add(int(ids))
       
-    def PhysicalIDs(self,pids):
+    def AddSideSetIDs(self,ids):
+        try:
+            for pid in ids:
+                self.SideSetIDs.add(int(pid))
+        except TypeError:
+            self.SideSetIDs.add(int(ids))
+            
+    def AddNodeSetIDs(self,ids):
+        try:
+            for pid in ids:
+                self.NodeSetIDs.add(int(pid))
+        except TypeError:
+            self.NodeSetIDs.add(int(ids))
+            
+      
+    def PhysicalIDs(self):
+        
+        pids = set()
         
         f = open( self.Filename, 'r' )
         
@@ -83,53 +103,114 @@ class GmshInput(object):
                     pids.add( elem.physid )
                 except:
                     print 'Error in adding physical id to set in GmshInput.PhysicalIDs'
-                    return
 
             if e>numElem:
-                return
-                    
-                    
-    #def FieldInt(self,i,line):
-    #    try:
-    #        return int( line[8*(i-1):8*i] )
-    #    except:
-    #        return 0
-    # 
-    #def FieldFloat(self,i,line):
-    #    try:
-    #        return float( line[8*(i-1):8*i] )
-    #    except:
-    #        return 0.0
+                break
+        return pids
+    
+    def NumNodes(self):
+       
+        f = open( self.Filename, 'r' )
+      
+        for line in f:
+            
+            n = -2
+            for line in f:
+                if ( line[0:6] == '$Nodes' ):
+                    n = -1
+                elif (line[0:9] == '$EndNodes'):
+                    n = -2
+                elif  n==-1:
+                    return int(line)
+
+    def ReadNodeSets(self):
    
-                
-    #def ReadNodes(self,nids):
-    #    
-    #    f = open( self.Filename, 'r' )
-    #    
-    #    nn = 0
-    #    for line in f:
-    #        if ( line[:4] == 'GRID' ):
-    #            nn = nn +1
-    #    
-    #    self.node = np.zeros( (nn,3), basic.FLOAT_TYPE )
-    #    self.nid  = np.zeros( nn, basic.INDX_TYPE )
-    #    
-    #    f.seek(0)
-    #    n=0
-    #    for line in f:
-    #        line = line.ljust(80)
-    #        if ( line[:4] == 'GRID' ):
-    #            self.node[n,0] = self.FieldFloat(3,line)
-    #            self.node[n,1] = self.FieldFloat(4,line)
-    #            self.node[n,2] = self.FieldFloat(5,line)
-    #            self.nid[n] = self.FieldInt(2,line)
-    #            n=n+1
-    #            
-    #    #self.nmap = {}
-    #    nn = 0
-    #    for n in self.nid:
-    #        self.nmap[n] = nn
-    #        nn = nn + 1
+        nodesets = {}
+        for pid in self.NodeSetIDs:
+            nodesets[pid] = set()
+        
+        f = open( self.Filename, 'r' )
+        
+        for line in f:
+            
+            e = -2
+            numElem = 0
+            for line in f:
+                if ( line[0:9] == '$Elements' ):
+                    e = -1
+                elif (line[0:12] == '$EndElements'):
+                    e = -2
+                elif  e==-1:
+                    numElem = int(line)
+                    e = 0
+                elif e >= 0:
+                    elem = GmshElement(line)
+                    if ( (elem.physid in self.NodeSetIDs) ):
+                        for i in elem.conn:
+                            nodesets[elem.physid].add( i )
+                    e += 1
+                if e>numElem:
+                    break
+            return nodesets
+                                               
+    def ReadSideSets(self):
+   
+        sidesets = {}
+        for pid in self.SideSetIDs:
+            sidesets[pid] = []
+        
+        f = open( self.Filename, 'r' )
+        
+        for line in f:
+            
+            e = -2
+            numElem = 0
+            for line in f:
+                if ( line[0:9] == '$Elements' ):
+                    e = -1
+                elif (line[0:12] == '$EndElements'):
+                    e = -2
+                elif  e==-1:
+                    numElem = int(line)
+                    e = 0
+                elif e >= 0:
+                    elem = GmshElement(line)
+                    if ( (elem.physid in self.SideSetIDs) ):
+                        sidesets[elem.physid].append(elem.ConvertElement())
+                    e += 1
+                if e>numElem:
+                    break
+            
+            return sidesets
+                                                       
+    def ReadNodes(self,nodes,nids):
+       
+        f = open( self.Filename, 'r' )
+      
+        for line in f:
+            
+            n = -2
+            numNode = 0
+            for line in f:
+                if ( line[0:6] == '$Nodes' ):
+                    n = -1
+                elif (line[0:9] == '$EndNodes'):
+                    n = -2
+                elif  n==-1:
+                    numNode = int(line)
+                    n = 0
+                elif n >= 0:
+                    fields = line.split(' ')
+                    i = int(fields[0])
+                    x = float(fields[1])
+                    y = float(fields[2])
+                    z = float(fields[3])
+                    nids[i] = n
+                    nodes[n] = np.array([x, y, z])
+                    n += 1
+                if n>numNode:
+                    break
+                          
         
     def ReadElements(self,elements):
         f = open( self.Filename, 'r' )
@@ -137,7 +218,7 @@ class GmshInput(object):
         if ( len(self.PhysIDs) == 0 ):
             AllPIDs = True 
         else:
-            ALLPIDs = False
+            AllPIDs = False
         
         for line in f:
             
@@ -157,16 +238,23 @@ class GmshInput(object):
                         elements.append( elem.ConvertElement() )
                     e += 1
                 if e>numElem:
-                    return
+                    break
                     
-
-   
-    
-# ---------------------
+# -----------------------------------
 gmshfile = GmshInput('channel.msh')
-pids = set()
-gmshfile.PhysicalIDs(pids)  
-#gmshfile.
+pids = gmshfile.PhysicalIDs()  
+gmshfile.AddPhysicalIDs([16,17])
+
 elements=[]
-gmshfile.ReadElements(elements)      
+gmshfile.ReadElements(elements)  
+
+nn = gmshfile.NumNodes()
+nodes=np.zeros((nn,3),float)
+nids = { }
+gmshfile.ReadNodes(nodes,nids)    
+    
+gmshfile.AddSideSetIDs( [19,20] )
+gmshfile.AddNodeSetIDs( 18 )
+nodesets = gmshfile.ReadNodeSets()
+sidesets = gmshfile.ReadSideSets()
     
