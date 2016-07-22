@@ -206,7 +206,18 @@ class ElemLine2(object):
             bmat[0,s:bmat.size:sdim] = dNdx[0][:,s]
         
         return [ bmat, dNdx[1] ]   
- 
+
+class ElemTruss3D(ElemLine2):
+     
+    def __init__(self,carray=[],prop={}):
+        self.prop = prop
+        self.conn = np.array(carray,dtype=basic.INDX_TYPE)
+        
+    def __repr__(self):
+        return '3D truss element '+str(self.conn)
+        
+    def Type(self):
+        return 'TRUSS3D'
 
 
 #######################################################################
