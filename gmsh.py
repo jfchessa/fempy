@@ -1,10 +1,5 @@
 import numpy as np
-import basic
-
-import material as matl
-import prop
 import element as elem
-import bcs
 
 #import pdb
 
@@ -45,7 +40,7 @@ class GmshElement(object):
             return elem.ElemTetra4(self.conn,self.physid)
             
         elif self.etype == 5:
-            return elem.ElemElemHexa8(self.conn,self.physid)
+            return elem.ElemHexa8(self.conn,self.physid)
             
         else:
             print 'Element type not supported in GmshElement.ConvertElement'
@@ -183,7 +178,7 @@ class GmshInput(object):
             
             return sidesets
                                                        
-    def ReadNodes(self,nodes,nids):
+    def ReadNodes(self):
        
         f = open( self.Filename, 'r' )
       
@@ -198,6 +193,8 @@ class GmshInput(object):
                     n = -2
                 elif  n==-1:
                     numNode = int(line)
+                    nodes = np.zeros((numNode,3),float)
+                    nids = {}
                     n = 0
                 elif n >= 0:
                     fields = line.split(' ')
@@ -210,15 +207,26 @@ class GmshInput(object):
                     n += 1
                 if n>numNode:
                     break
-                          
-        
-    def ReadElements(self,elements):
+                    
+            return [nodes,nids]
+                    
+    def ReadElements(self):
         f = open( self.Filename, 'r' )
+        
+        elements = {}
         
         if ( len(self.PhysIDs) == 0 ):
             AllPIDs = True 
         else:
             AllPIDs = False
+        
+        if AllPIDs:
+            pids = self.PhysicalIDs()
+            for p in pids:
+                elements[p] = []
+        else:
+            for p in self.PhysIDs:
+                elements[p] = []
         
         for line in f:
             
@@ -235,26 +243,9 @@ class GmshInput(object):
                 elif e >= 0:
                     elem = GmshElement(line)
                     if ( (elem.physid in self.PhysIDs) or AllPIDs ):
-                        elements.append( elem.ConvertElement() )
+                        elements[elem.physid].append( elem.ConvertElement() )
                     e += 1
                 if e>numElem:
                     break
                     
-# -----------------------------------
-gmshfile = GmshInput('channel.msh')
-pids = gmshfile.PhysicalIDs()  
-gmshfile.AddPhysicalIDs([16,17])
-
-elements=[]
-gmshfile.ReadElements(elements)  
-
-nn = gmshfile.NumNodes()
-nodes=np.zeros((nn,3),float)
-nids = { }
-gmshfile.ReadNodes(nodes,nids)    
-    
-gmshfile.AddSideSetIDs( [19,20] )
-gmshfile.AddNodeSetIDs( 18 )
-nodesets = gmshfile.ReadNodeSets()
-sidesets = gmshfile.ReadSideSets()
-    
+            return elements

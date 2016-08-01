@@ -140,7 +140,7 @@ class ElemLine2(object):
         return self.prop
         
     def Material(self):
-        return self.prop.material
+        return self.prop['Matl']
         
     def ElemDim(self):
         return 1

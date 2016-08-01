@@ -1,172 +1,316 @@
 import numpy as np
-                                                                                                                                  
-class MaterialState(object):
-    """This class abstracts the material state at a point to use in a
-    constitutive model to compute stress and other realted material 
-    quantities."""
+              
+ 
+class SS3DStress(object):
     def __init__(self):
-        self.strain=0.0
-        self.stress=0.0
-        self.straininc=0.0
-        
-    def __repr__(self):
-        return 'strain='+str(self.strain)
+         self.vdim=6
+         self.dim=3
+         self.ndi=3
+         self.nshr=3
+          
+class SSPlaneStress(object):
+    def __init__(self):
+         self.vdim=3
+         self.dim=2
+         self.ndi=2
+         self.nshr=1
+                              
+class SSPlaneStrain(object):
+    def __init__(self):
+         self.vdim=3
+         self.dim=2
+         self.ndi=2
+         self.nshr=1
+                                                
+class SSAxisymmetric(object):
+    def __init__(self):
+         self.vdim=3
+         self.dim=2
+         self.ndi=2
+         self.nshr=1
+                          
+class SSRod2D(object):
+    def __init__(self):
+         self.vdim=1
+         self.dim=2
+         self.ndi=1
+         self.nshr=0
+                                    
+class SSRod3D(object):
+    def __init__(self):
+         self.vdim=2
+         self.dim=2
+         self.ndi=1
+         self.nshr=1
 
-#------------------------------------------------------------------------------ 
-class Stress3D(object):
-    def __init__(self,stress=np.zeros(6,float)):
-        self.edim=3   # element dimension
-        self.sdim=3   # spacial dim
-        self.vdim=6   # voigt dim 
-        self.symm=True
-        self.SetStress(stress)
-        
-    def SetStress(self,stress):    
-        try:
-            self.stress=np.reshape(stress,self.vdim)
-        except ValueError:  
-            print "Incorrect stress value in Stress __init__"    
-        
-class StressShell(Stress3D):
-    def __init__(self,stress=np.zeros(6,float)):
-        self.edim=2
-        self.sdim=3
-        self.vdim=6     
-        self.symm=True
-        self.SetStress(stress)
-        
-class StressRod3D(Stress3D):
-    def __init__(self,stress=np.zeros(2,float)):
-        self.edim=1
-        self.sdim=3
-        self.vdim=2   
-        self.symm=True
-        self.SetStress(stress)
-        
-class StressPlaneStrain(Stress3D):
-    def __init__(self,stress=np.zeros(3,float)):
-        self.edim=2
-        self.sdim=2
-        self.vdim=3   
-        self.symm=True
-        self.SetStress(stress)
-        
-class StressPlaneStress(StressPlaneStrain):
-    def __init__(self,stress=np.zeros(3,float)):
-        self.edim=2
-        self.sdim=2
-        self.vdim=3    
-        self.symm=True
-        self.SetStress(stress)
-        
-class StressAxisymmetric(StressPlaneStrain):
-    def __init__(self,stress=np.zeros(4,float)):
-        self.edim=2
-        self.sdim=2
-        self.vdim=4     
-        self.symm=True
-        self.SetStress(stress)
-        
-class StressRod2D(Stress3D):
-    def __init__(self,stress=np.zeros(1,float)):
-        self.edim=1
-        self.sdim=2
-        self.vdim=1    
-        self.symm=True
-        self.SetStress(stress)
-
-#------------------------------------------------------------------------------ 
-class ConductionMat(object):  
-    """A class for linear isotropic conduction material"""
-    def __init__(self,kappa,cp,rho):
-        self.mattype = 'linear elastic isotropic'
-        self.matprop = { 'kappa':kappa, 'cp':cp, 'rho':rho }
-
-#------------------------------------------------------------------------------    
+class MaterialPoint(dict):
     
-class LinearElasticMat(object):
+    def __init__(self,*args,**kwargs):
+        dict.__init__(self,*args,**kwargs)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+class Tensor(np.ndarray):
+ 
+    def __new__( subtype, rank, ndim, sym=False, buff=None ): 
+        
+        if ( rank==0 ):
+            shp = 1
+        elif ( sym ):
+            if ( rank == 2 ):
+                shp = ( ndim**rank - ndim )/2 + ndim
+            elif ( rank == 4 ):
+                r=rank/2
+                shp = ( ( ndim**r - ndim )/2 + ndim, )*r
+            else:
+                print 'Error, rank of symetric tensor must be either 2 or 4' 
+                sym =False    
+                  
+        if ( not sym ):
+            shp = (ndim,)*rank
+ 
+        try:
+            obj = np.ndarray.__new__(subtype, shp, float, np.array(buff,float) )
+        except:
+            buff = None
+            obj = np.ndarray.__new__(subtype, shp, float )
+            
+        return obj
+        
+    def __init__( self, rank, ndim, sym=False, buff=None  ):
+        self.sym = sym
+        self.rank = int(rank)
+        self.dim = int(ndim)
+        if ( buff==None ):
+            self.fill(0)
+
+    def Rank(self):
+        return self.rank;
+        
+    def Dim(self):
+        return self.dim   
+         
+    def Set( self, buff ):
+        self = Tensor( self.Dim(), buff )
+                              
+    #def Full( self ):
+    #    
+    #    return self.reshape((1,9))[ 0, [0,4,8,5,2,1] ] 
+   
+class SR2Tensor1D(Tensor):
+              
+    def __new__( subtype, buff=None ): 
+        obj = Tensor.__new__(subtype,2,1,True,buff)   
+        return obj
+                                                    
+    def __init__( self, buff=None  ):
+        Tensor.__init__(self,2,1,True,buff) 
+        
+    def Hydrostatic(self):
+        return self
+    
+    def Deviatoric(self):
+        return SR2Tensor1D([0.0])
+        
+    def Mises(self):
+        return abs(self)        
+        
+class SR2Tensor2D(Tensor):
+              
+    def __new__( subtype, buff=None ): 
+        obj = Tensor.__new__(subtype,2,2,True,buff)   
+        return obj
+                                                    
+    def __init__( self, buff=None  ):
+        Tensor.__init__(self,2,2,True,buff) 
+        
+    def Hydrostatic(self):
+        shyd = 0.5*(self[0] + self[1])
+        return SR2Tensor2D( [shyd, shyd, 0.0] )
+    
+    def Deviatoric(self):
+        return self - self.Hydrostatic()
+        
+    def Mises(self):
+        vm = (self[0]-self[1])**2 + self[0]**2 + self[1]**2 + 6*self[2]**2
+        return np.sqrt(0.5*vm)
+                
+class SR2Tensor3D(Tensor):
+              
+    def __new__( subtype, buff=None ): 
+        obj = Tensor.__new__(subtype,2,3,True,buff)   
+        return obj
+                                                    
+    def __init__( self, buff=None  ):
+        Tensor.__init__(self,2,3,True,buff)   
+    
+    def Hydrostatic(self):
+        shyd = 0.333333333333333333333*(self[0]+self[1]+self[2])
+        return SR2Tensor3D( [shyd, shyd, shyd, 0.0, 0.0, 0.0] )
+    
+    def Deviatoric(self):
+        return self - self.Hydrostatic()
+        
+    def Mises(self):
+        vm = (self[0]-self[1])**2 + (self[1]-self[2])**2 + (self[2]-self[0])**2
+        vm += 6*(self[3]**2 + self[4]**2 + self[5]**2)
+        return np.sqrt(0.5*vm)
+                              
+
+def SR2Tensor(dim,buff=None):
+    if ( dim == 1 ):
+        return SR2Tensor1D(buff)
+    elif ( dim == 2 ):
+        return SR2Tensor2D(buff)
+    else:
+        return SR2Tensor3D(buff)
+        
+                                                                                                                                                                                                                                                                                                                                    
+class LinearElasticMat(dict):
+    
     """A class for linear isotropic elastic material"""
-    def __init__(self,E,nu=.3,rho=0):
+    def __init__(self,*args,**kwargs):
         self.mattype = 'linear elastic isotropic'
-        self.matprop = { 'E':E, 'nu':nu, 'G':E/(1+nu)/2, 'rho':rho }
+        dict.__init__(self,*args,**kwargs)
+        self.CheckProperties()
         
     def __repr__(self):
         return self.mattype
-                                                                      
-    def TangentStiffness(self,sf=Stress3D(),svar=0):
-        
-        if ( type(sf) == StressRod2D ):
-            C1 = self.matprop['E']
-            return np.array([[C1]],float) 
-                    
-        if ( type(sf) == StressRod3D ):
-            C1 = self.matprop['E']
-            C2 = self.matprop['G']
-            return np.array([[C1,0],[0,C2]],float) 
+     
+    def InitializeMaterialPoint(self,mp):
+        sf = mp['StressState']
+        sd = sf.ndi + sf.nshr
+        mp['Stress'] = SR2Tensor(sd)
+           
+    def CheckProperties(self):
+        if ( ('E' in self) and ('nu' in self) ):
+            self['G'] = 2.0*self['E']/(1+self['nu'])
             
-        if ( type(sf) == StressPlaneStress ):
-            C1 = self.matprop['E']/(1-(self.matprop['nu'])**2)
-            C2 = C1*self.matprop['nu']
-            C3 = self.matprop['G']
+        elif ( ('E' in self) and ('G' in self) ):
+            self['nu'] = 2*self['E']/self['G'] - 1.0
+            
+        elif ( ('nu' in self) and ('G' in self) ):
+            self['E'] = 0.5*self['G']*(1.0+self['nu'])
+            
+        else:
+            return True
+        
+        return False
+                                                                                                                                         
+    def TangentStiffness(self,mp):
+            
+        E = self['E']
+        G = self['G']
+        nu = self['nu'] 
+        
+        sf = mp['StressState']    
+            
+        if ( type(sf) == SSRod2D ):
+            return np.array([[E]],float)
+                    
+        if ( type(sf) == SSRod3D ):
+            return np.array([[E,0],[0,G]],float)  
+            
+        if ( type(sf) == SSPlaneStress ):
+            C1 = E/(1-nu**2)
+            C2 = C1*nu
+            C3 = G
             return np.array([[C1,C2,0],[C2,C1,0],[0,0,C3]],float)
             
-        if ( type(sf) == StressPlaneStrain ):
-            C1 = self.matprop['E']/((1+self.matprop['nu'])*(1-2*self.matprop['nu']))
-            C2 = C1*self.matprop['nu']
-            C1 = (1-self.matprop['nu'])*C1
-            C3 = self.matprop['G']
+        if ( type(sf) == SSPlaneStrain ):
+            C1 = E/((1+nu)*(1-2*nu))
+            C2 = C1*nu
+            C1 = (1-nu)*C1
+            C3 = G
             return np.array([[C1,C2,0],[C2,C1,0],[0,0,C3]],float) 
                     
-        if ( type(sf) == StressAxisymmetric ):
-            C1 = self.matprop['E']/((1+self.matprop['nu'])*(1-2*self.matprop['nu']))
-            C2 = C1*self.matprop['nu']
-            C1 = (1-self.matprop['nu'])*C1
-            C3 = self.matprop['G']
+        if ( type(sf) == SSAxisymmetric ):
+            C1 = E/((1+nu)*(1-2*nu))
+            C2 = C1*nu
+            C1 = (1-nu)*C1
+            C3 = G
             return np.array([[C1,C2,C2,0],[C2,C1,C2,0],[C2,C2,C1,0],[0,0,0,C3]],float)
                     
         else:
-            C1 = self.matprop['E']/((1+self.matprop['nu'])*(1-2*self.matprop['nu']))
-            C2 = C1*self.matprop['nu']
-            C1 = (1-self.matprop['nu'])*C1
-            C3 = self.matprop['G']
+            C1 = E/((1+nu)*(1-2*nu))
+            C2 = C1*nu
+            C1 = (1-nu)*C1
+            C3 = G
             return np.array([[C1,C2,C2,0,0,0],[C2,C1,C2,0,0,0],\
                     [C2,C2,C1,0,0,0],[0,0,0,C3,0,0],[0,0,0,0,C3,0],\
-                    [0,0,0,0,0,C3]],float) 
+                    [0,0,0,0,0,C3]],float)   
                     
-    def Stress( self, strain ):
-        C = self.TangentStiffness(strain)
-        #if ( type(strain) != numpy.ndarray ):
-        #    return np.dot(C,array(strain).reshape((6,1))) 
-        #return np.dot(C,strain.reshape((6,1)))    
-               
-#------------------------------------------------------------        
+    def Stress(self,mp):
+        sf = mp['StressState']    
+        strain = mp['Strain']
+        C = self.TangentStiffness(sf)
+        return np.dot(C,strain)
+
+          
+                                                
 class J2PlasticIsoHard(LinearElasticMat): 
     """J2 plasticity with isotropic linear hardening"""   
-    def __init__(self,E,nu=.3,rho=0,sy=0,alpha=0):
-        self.young = E
-        self.poisson = nu
-        self.density = rho
-        self.yieldstress = sy
-        self.alpha = alpha 
+
+    def __init__(self,*args,**kwargs):
+        """ needs E, Sy and Etan defined """
+        LinearElasticMat.__init__(self,*args,**kwargs)
+        self.mattype = 'J2 plastic with linear isotropic hardening'
         
-    def Stress( self, strain, sf=-1, svar=0 ):
+    def InitializeMaterialPoint(self,mp):
+        sf = mp['StressState']
+        sd = sf.ndi + sf.nshr
+        mp['Strain']    = SR2Tensor(sd)
+        mp['Stress']    = SR2Tensor(sd)
+        mp['StrainInc'] = SR2Tensor(sd)
+        mp['Sy'] = self['Sy']
+                                                                                                                       
+    def ElasticTanStiffness(self,mp):
+        return LinearElasticMat.TangentStiffness(self,mp) 
+                                                                                           
+    def InelasticTanStiffness(self,mp):
+        C = LinearElasticMat.TangentStiffness(self,mp)
+        return (self['Etan']/self['E'])*C
+                                                                                            
+    def TangentStiffness(self,mp):
+        
+        svm = mp['Stress'].Mises()
+        C = LinearElasticMat.TangentStiffness(self,mp)
+        if ( svm < mp['Sy'] ):
+            return C
+        else:
+            return (self['Etan']/self['E'])*C
+            
+    def Stress( self, mp ):
+        """Requires Stress, Strain, StrainInc, and Sy in the MaterialPoint"""
 #        import pdb; pdb.set_trace()
-        epsn = strain
-        deps = state.straininc
-        sign = state.stress
-        dsig = self.young*deps
-        if np.abs(sign+dsig) > self.yieldstress :
-            dsig = deps*self.alpha
-            self.yieldstress = self.yieldstress + dsig
+        epsn = mp['Strain']
+        deps = mp['StrainInc']
+        sign = mp['Stress']
+     
+        yieldstress = mp['Sy']
+        
+        dsig = self.ElasticTanStiffness(mp)*deps
+        strial = sign + dsig
+        if ( strial.Mises() >= yieldstress ):
+            dsig = self.InelasticTanStiffness(mp)*deps
+            mp['Sy'] = mp['Sy'] + dsig.Mises()
         
         sig = sign + dsig    
-        state.strain = epsn + deps
-        state.stress = sig  
+        mp['Strain'] = epsn + deps
+        mp['Stress'] = sig  
         return sig
         
 
 #------------------------------------------------------------ 
-#mat = LinearElasticMat(10e6,.28,.028)
-#print mat.TangentStiffness()          
-#print mat.TangentStiffness(StressPlaneStrain()) 
-#print mat.Stress([                                                              
+mat0 = LinearElasticMat(E=10e6,nu=.28)
+mp = MaterialPoint( StressState=SSRod2D() )
+C = mat0.TangentStiffness( mp )    
+
+mat1 = J2PlasticIsoHard(E=10e6,nu=.28,Sy=10000,Etan=5e5) 
+mat1.InitializeMaterialPoint(mp)  
+                                         
+mp['StrainInc'] =  SR2Tensor1D([.0001])    
+sig=[]
+eps=[]
+for i in xrange(25):
+    sig.append( mat1.Stress(mp).Mises() )
+    eps.append( mp['Strain'].Mises() )  
+     
