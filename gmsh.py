@@ -213,20 +213,12 @@ class GmshInput(object):
     def ReadElements(self):
         f = open( self.Filename, 'r' )
         
-        elements = {}
+        elements = []
         
         if ( len(self.PhysIDs) == 0 ):
             AllPIDs = True 
         else:
             AllPIDs = False
-        
-        if AllPIDs:
-            pids = self.PhysicalIDs()
-            for p in pids:
-                elements[p] = []
-        else:
-            for p in self.PhysIDs:
-                elements[p] = []
         
         for line in f:
             
@@ -243,7 +235,7 @@ class GmshInput(object):
                 elif e >= 0:
                     elem = GmshElement(line)
                     if ( (elem.physid in self.PhysIDs) or AllPIDs ):
-                        elements[elem.physid].append( elem.ConvertElement() )
+                        elements.append( elem.ConvertElement() )
                     e += 1
                 if e>numElem:
                     break
