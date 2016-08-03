@@ -18,7 +18,7 @@ class DofMap(object):
         """Number of dof per node"""
         return self.ndpn[nid]
         
-    def LDOFs(self):    
+    def LDOFs(self,nid=0):    
         return np.array( range(self.NumNodeDof()), int )
             
     def Sctr(self,conn,ldofs=None):
@@ -71,6 +71,13 @@ class VariDofMap(DofMap):
     def NumDof(self):
         return self.ndof
                 
+    def NumNodeDof(self,nid):
+        """Number of dof per node"""
+        return len(self.dmap[nid])
+    
+    def LDOFs(self,nid):    
+        return self.dmap[nid]
+            
     def FixDofs(self):
         if self.fixed:
             return

@@ -210,7 +210,7 @@ class GmshInput(object):
                     
             return [nodes,nids]
                     
-    def ReadElements(self):
+    def ReadElements(self,propMap=None):
         f = open( self.Filename, 'r' )
         
         elements = []
@@ -239,5 +239,12 @@ class GmshInput(object):
                     e += 1
                 if e>numElem:
                     break
-                    
-            return elements
+            
+        if ( not propMap == None ):
+            for e in elements:
+                try:
+                    e.prop = propMap[e.prop]
+                except:
+                    a=1
+                        
+        return elements
