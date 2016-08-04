@@ -14,6 +14,7 @@ class GmshElement(object):
         self.physid = int( fields[3] )
         self.geomid = int( fields[4] )
         self.partitions = []
+        self.nidmap=dict()
         i=5
         if (ntags > 2):
             npart = int( fields[i] )
@@ -248,3 +249,23 @@ class GmshInput(object):
                     a=1
                         
         return elements
+        
+    def RenumberConnectivity(self,nidmap,elements):
+        
+        for e in elements:
+            for i in xrange(len(e.conn) ):
+                ni=e.conn[i]
+                e.conn[i] = nidmap[ni]
+        
+        return elements
+        
+    def RenumberNodeSets(self,nidmap,nsets):
+        
+        for pid, ns in nsets.iteritems():
+            news = set()
+            while ns:
+                i = ns.pop()
+                news.add( nidmap[i] )
+            nsets[pid]=news
+
+            

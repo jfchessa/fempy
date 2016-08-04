@@ -69,7 +69,8 @@ gmshfile.AddSideSetIDs( inletPID )
 gmshfile.AddNodeSetIDs( heatFluxPID )
 
 elements = gmshfile.ReadElements(props)  
-[nodes,nids] = gmshfile.ReadNodes()    
+[nodes,nids] = gmshfile.ReadNodes()   
+elements = gmshfile.RenumberConnectivity(nids,elements) 
     
 nodesets = gmshfile.ReadNodeSets()
 sidesets = gmshfile.ReadSideSets()
