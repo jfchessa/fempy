@@ -54,7 +54,7 @@ channelPID = 163
 fluidPID = 162
 
 inletPID = 164
-heatFluxPID = 154
+heatFluxPID = 165
 
 wallMat = matl.LinearElasticMat(E=10e6,nu=.3,rho=.098,kappa=236,cp=10,alpha=2e-6)
 fluidMat = matl.LinearElasticMat(E=10e6,nu=.3,rho=.098,kappa=236,cp=10,alpha=2e-6)
@@ -68,9 +68,8 @@ gmshfile.AddPhysicalIDs([channelPID])
 gmshfile.AddSideSetIDs( inletPID )
 gmshfile.AddNodeSetIDs( heatFluxPID )
 
-elements = gmshfile.ReadElements(props)  
 [nodes,nids] = gmshfile.ReadNodes()   
-elements = gmshfile.RenumberConnectivity(nids,elements) 
+elements = gmshfile.ReadElements(props)   
     
 nodesets = gmshfile.ReadNodeSets()
 sidesets = gmshfile.ReadSideSets()
