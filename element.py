@@ -444,3 +444,18 @@ class ElemHexa8(ElemTetra4):
  
  
 #-----------------------------------------------------------------------------
+        	
+class ElementArray(dict):
+    
+    def __init__(self,*args):
+        self.elems = {}
+
+ 
+    def __repr__(self):
+        s='Element Array\n'
+        for eid, e in self.iteritems():
+            s=s+str(eid)+': ' +str(e)+'\n'
+        return s
+               	    	    	     
+               	    	    	     
+               	    	 

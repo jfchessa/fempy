@@ -41,7 +41,7 @@ class DelayedAssm(object):
       
     def CalcSpace(self,element,dpn):
         expdim = 0
-        for e in element:
+        for eid, e in element.iteritems():
             expdim = expdim + (e.NumNodes()*dpn)**2
         return expdim 
          
@@ -185,29 +185,266 @@ class FeSolver(object):
 	freac = self.Kmat.dot(d) 
 	
 	return [d,freac]
-		
-#------------
-#ne=8
-#kedim=6
-#conn = np.array([[0,1,2,3,6,7],[2,3,8,9,6,7],[2,3,4,5,8,9],[4,5,10,11,8,9],\
-#        [6,7,8,9,12,13],[8,9,14,15,12,13],[8,9,10,11,14,15],\
-#        [10,11,16,17,14,15]],INDX_TYPE)
-#ke = np.array([[7.4176,   -3.5714,   -1.9231,    1.6484,   -5.4945,    1.9231],\
-#   [-3.5714,    7.4176,    1.9231,   -5.4945,    1.6484,   -1.9231],\
-#   [-1.9231,    1.9231,    1.9231,         0,         0,   -1.9231],\
-#   [ 1.6484,   -5.4945,         0,    5.4945,   -1.6484,         0],\
-#   [-5.4945,    1.6484,         0,   -1.6484,    5.4945,         0],\
-#   [ 1.9231,   -1.9231,   -1.9231,         0,         0,    1.9231]],FLOAT_TYPE)
-#
-#ne = 5
-#kedim = 2
-#ke = np.array([[100.0,-100.0],[-100.0,100.0]],FLOAT_TYPE)
-#conn = np.array([[0,1],[1,2],[2,3],[3,4],[4,5]],INDX_TYPE)
-#kdat = DelayAssm(ne*kedim**2)
-#for e in conn:
-#    kdat.AddKe(ke,e)
 
-ke=np.array([[1,1,1,1],[1,1,1,1]],float)
-kdat = DelayedAssm(16)
-kdat.AddLocalMatrix(ke,np.array([0,1],int),np.array([0,1,2,3],int))
-kdat.AddLocalMatrix(ke,np.array([1,2],int),np.array([2,3,4,5],int))
+		
+#class NodeArray(object):
+#    
+#    def __init__(self,cap=None):
+#        self.sinc =100
+#        if cap==None:
+#            cap=self.sinc
+#        
+#        self.ncoord = np.zeros((cap,3),dtype=np.float)
+#        self.nid = {}
+#        
+#        self.nn = 0
+#         
+#    def __repr__(self):
+#        s='Node Array\n'
+#        for k, v in self.nid.iteritems():
+#            s=s+str(k)+': ' +str(self.ncoord[v])+'\n'
+#        return s
+#                
+#    def Capacity(self):
+#        return len(self.ncoord)   
+#        
+#    def IncreaseCapacity(self,cap):
+#        if cap<=self.Capacity():
+#            return
+#        
+#        tmp = self.ncoord[range(self.nn)]
+#        self.ncoord = np.zeros((cap,3),dtype=np.float)
+#        self.ncoord[range(self.nn)] = tmp     
+#            
+#    def AddNode(self,n,coord):
+#        
+#        if self.nn >= self.Capacity():
+#            self.IncreaseCapacity(self.Capacity()+self.sinc)
+#            
+#        self.nid[n] = self.nn
+#        self.ncoord[self.nn] = coord       
+#            
+#        self.nn = self.nn + 1
+#        
+#    def __getitem__(self,i):
+#        try:
+#            return self.CoordMat(i)
+#        except:
+#            return self.CoordMat([i])
+#                
+#    def CoordMat(self,conn):
+#        Is = np.zeros(len(conn),dtype=int)
+#        for i in xrange(len(conn)):
+#            try:
+#                I = self.nid[conn[i]]
+#            except KeyError:
+#                print 'invalid node id'
+#                return 
+#            Is[i]= I
+#       
+#        return self.ncoord[Is]	
+  
+class Point(np.ndarray):
+ 
+    def __new__( subtype, coord=[] ): 
+        obj = np.ndarray.__new__( subtype, 3, float )
+        return obj
+        
+    def __init__( self, coord=[] ):
+        i=0
+        for c in coord:
+            self[i] = c
+            i += 1
+            if i > 2:
+                return
+        while i<3:
+            self[i] = 0.0
+            i += 1
+            
+    def __repr__( self ):
+        return '['+str(self[0])+' '+str(self[1])+' '+str(self[2])+']'
+        
+    def x(self):
+        return self[0]
+        
+    def y(self):
+        return self[1]
+        
+    def z(self):
+        return self[2]
+        
+        
+class NodeArray(dict):
+    
+    def __init__(self,*args):
+        self.nodes = {}
+
+    def __repr__(self):
+        s='Node Array\n'
+        for nid, node in self.iteritems():
+            s=s+str(nid)+': ' +str(node)+'\n'
+        return s
+    
+    def CoordMat(self,nids):
+        cm = np.ndarray((len(nids),3),dtype=float)
+        ii=0
+        for i in nids:
+            cm[ii]= dict.__getitem__(self,i)
+            ii += 1
+        return cm           	    	    	     
+     
+    def __getitem__(self,i):
+        try:
+            return self.CoordMat(i)
+        except:
+            return self.CoordMat([i])
+                          	    	    	
+    def __setitem__(self,i,node):
+        dict.__setitem__(self,i,Point(node))
+                
+    def AddNode(self,n,node):
+        self.__setitem__(n,node)        
+        
+   
+class DofMap(object):
+    
+    def __init__(self,ndpn={}):
+        self.gid = {}
+        self.ndof=0
+        for i, n in ndpn.iteritems():
+            self.gid[i] = range(self.ndof,self.ndof+n)
+            self.ndof += n
+ 
+    def __repr__(self):
+        s='Dof Map\n'
+        for n, gdofs in self.gid.iteritems():
+            s = s +str(n)+": "+str(gdofs)+'\n'
+        return s
+       
+    def __getitem__(self,n):
+        try:
+            s=[]
+            for i in n:
+                s=s.append(self.gid[i])
+            return s
+        except TypeError:
+            return self.gid[n]
+         
+    def ActivateDofs(self,elements,ndof):
+        for eid, e in elements.iteritems():
+            for n in e.conn:
+                
+                if n in self.gid:               # node already has active gdofs
+                    nn = ndof-self.NumNodeDof(n)
+                    if nn > 0:                  # but we need to add more
+                        self.gid[n].append( range(self.ndof,self.ndof+nn) )
+                        self.ndoe += nn
+                else:                          # node not active 
+                    self.gid[n] = range(self.ndof,self.ndof+ndof)
+                    self.ndof += ndof
+    
+    def Renumber(self):
+        I=0
+        for i, gdofs in self.gid.iteritems():
+            n = len(gdofs)
+            self.gid[i] = range(I,I+n)
+            I += n
+              
+    def GID(self,nid,lid=0):
+        return self.gid[nid][lid]
+        
+    def NumNodeDof(self,nid=0):
+        """Number of dof per node"""
+        return len(self.gid[nid])
+        
+    def NumDof(self):
+        """Total number of dofs"""
+        return self.ndof
+        
+    def LDOFs(self,nid=0):    
+        return np.array( range(self.NumNodeDof(nid)), int )
+            
+    def Sctr(self,conn,ldofs=None):
+        if ( ldofs==None ):
+            ldofs = self.LDOFs()
+            
+        sctr = np.ndarray( len(conn)*len(ldofs), INDX_TYPE )
+        ii = 0
+        for nid in conn:
+            for s in ldofs:
+                sctr[ii] = self.GID(nid,s)
+                ii = ii + 1
+        return sctr
+
+class EssentialBCs(dict):
+            
+    def __repr__(self):
+        s='EssentialBCs\nnid: ldof values\n'
+        for n, ldof in self.iteritems():
+            s=s+str(n)+': '+str(ldof)+'\n'
+        return s
+                
+    def AddPointValues(self,nids,ldofs,vals=None):
+        
+        nspc = len(ldofs)
+        
+        if vals==None:
+            vals=np.zeros(nspc)
+    
+        if not len(vals)==nspc:
+            vals = np.ones(nspc)*vals[0]
+            
+        for n in nids:
+            if not n in self:
+                dict.__setitem__(self,n,{})
+            for s in xrange(nspc):
+                (dict.__getitem__(self,n))[ ldofs[s] ] = vals[s]    
+                
+    def GetIFIX(self,dofmap):
+        
+        ifix = []
+        ival = []
+        for n, ldof in self.iteritems():
+            for s, v in ldof.iteritems():
+                ifix.append( dofmap.GID(n,s) )
+                ival.append( v )
+        
+        return [ ifix, ival ]
+ 
+class NaturalBCs(dict):
+            
+    def __repr__(self):
+        s='NaturalBCs\nnid: ldof values\n'
+        for n, ldof in self.iteritems():
+            s=s+str(n)+': '+str(ldof)+'\n'
+        return s
+                
+    def AddPointValues(self,nids,ldofs,vals=None):
+        
+        nspc = len(ldofs)
+        
+        if vals==None:
+            vals=np.zeros(nspc)
+    
+        if not len(vals)==nspc:
+            vals = np.ones(nspc)*vals[0]
+            
+        for n in nids:
+            if not n in self:
+                dict.__setitem__(self,n,{})
+            for s in xrange(nspc):
+                if ldofs[s] in self[n]: 
+                    (dict.__getitem__(self,n))[ ldofs[s] ] += vals[s] 
+                else:  
+                    (dict.__getitem__(self,n))[ ldofs[s] ] = vals[s]  
+              
+    def AddFaceTrac(self,nodes,sideset,itrac,trac):
+        print 'PointForce.AddFaceTrac() not yet implemented'
+          
+    def AddRHS(self,dofmap,rhs):
+        
+        for n, ldof in self.iteritems():
+            for s, v in ldof.iteritems():
+                rhs[ dofmap.GID(n,s) ] += v
+        
+                

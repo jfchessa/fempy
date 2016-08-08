@@ -1,7 +1,6 @@
 import numpy as np
 import basic
 import gmsh
-import dofmap as dmap
 import material as matl
 import prop
  
@@ -20,7 +19,7 @@ class CoolingChannelProblem(object):
         etype = None
         mtype = None
         
-        for e in elements:
+        for eid, e in elements.iteritems():
             
             if ( not etype==e.Type() ):
                 etype = e.Type()
@@ -31,7 +30,7 @@ class CoolingChannelProblem(object):
                 mtype = e.prop['Matl']
                 k = mtype['kappa'] 
             
-            ecoord = node[e.Connectivity(),:]
+            ecoord = node[ e.Connectivity() ]
             sctr = dofMap.Sctr(e.Connectivity(),[0])
         
             ke = np.zeros((nne,nne))
@@ -65,18 +64,21 @@ props = { channelPID:wallProp, fluidPID:fluidProp }
 #gmshfile.AddPhysicalIDs([channelPID,fluidPID])
 gmshfile.AddPhysicalIDs([channelPID])
 
-gmshfile.AddSideSetIDs( inletPID )
-gmshfile.AddNodeSetIDs( heatFluxPID )
+gmshfile.AddSideSetIDs( heatFluxPID )
+gmshfile.AddNodeSetIDs( inletPID )
 
-[nodes,nids] = gmshfile.ReadNodes()   
+nodes = gmshfile.ReadNodes()   
 elements = gmshfile.ReadElements(props)   
     
 nodesets = gmshfile.ReadNodeSets()
 sidesets = gmshfile.ReadSideSets()
 
-dofmap = dmap.VariDofMap(nids)
+dofmap = basic.DofMap()
 dofmap.ActivateDofs(elements,1)
-dofmap.FixDofs()
-    
+dofmap.Renumber()
+
 problem = CoolingChannelProblem()
 K = problem.ComputeStiffness(elements,nodes,dofmap)
+
+#spcs = basic.EssentialBCs()
+#spcs.AddPointValues(dofmap,nodesets[inletPID],[0],[200.0])

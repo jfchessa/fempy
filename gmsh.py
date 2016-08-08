@@ -1,4 +1,5 @@
 import numpy as np
+import basic
 import element as elem
 
 #import pdb
@@ -56,8 +57,8 @@ class GmshInput(object):
         self.NodeSetIDs = set()
         self.SideSetIDs = set()
         
-        self.Renumber = True
-        self.nidmap = None
+#        self.Renumber = True
+#        self.nidmap = None
         
     def AddPhysicalIDs(self,ids):
         try:
@@ -125,8 +126,8 @@ class GmshInput(object):
 
     def ReadNodeSets(self):
    
-        if self.nidmap == None:
-            self.ReadNodeMap()
+        #if self.nidmap == None:
+        #    self.ReadNodeMap()
             
         nodesets = {}
         for pid in self.NodeSetIDs:
@@ -149,7 +150,7 @@ class GmshInput(object):
                 elif e >= 0:
                     elem = GmshElement(line)
                     if ( (elem.physid in self.NodeSetIDs) ):
-                        elem.conn = self.RenumberNIDs(elem.conn)
+                        #elem.conn = self.RenumberNIDs(elem.conn)
                         for i in elem.conn:
                             nodesets[elem.physid].add( i )
                     e += 1
@@ -180,7 +181,7 @@ class GmshInput(object):
                 elif e >= 0:
                     elem = GmshElement(line)
                     if ( (elem.physid in self.SideSetIDs) ):
-                        elem.conn = self.RenumberNIDs(elem.conn)
+                        #elem.conn = self.RenumberNIDs(elem.conn)
                         sidesets[elem.physid].append(elem.ConvertElement())
                     e += 1
                 if e>numElem:
@@ -188,45 +189,45 @@ class GmshInput(object):
             
             return sidesets
                                                       
-    def ReadNodeMap(self):
-             
-        f = open( self.Filename, 'r' )
-      
-        for line in f:
-            
-            n = -2
-            numNode = 0
-            for line in f:
-                
-                if ( line[0:6] == '$Nodes' ):
-                    n = -1
-                    
-                elif (line[0:9] == '$EndNodes'):
-                    n = -2
-                    
-                elif  n==-1:
-                    numNode = int(line)
-                    nids = {}
-                    
-                    if not self.Renumber:
-                        for i in xrange(numNode):
-                            nids[i]=i
-                        return nids
-                        
-                    n = 0
-        
-                elif n >= 0:
-                    fields = line.split(' ')
-                    i = int(fields[0])
-                    nids[i] = n
-                    n += 1
-                if n>numNode:
-                    break
-              
-        if self.Renumber:
-            self.nidmap = nids   
-                       
-        return nids    
+    #def ReadNodeMap(self):
+    #         
+    #    f = open( self.Filename, 'r' )
+    #  
+    #    for line in f:
+    #        
+    #        n = -2
+    #        numNode = 0
+    #        for line in f:
+    #            
+    #            if ( line[0:6] == '$Nodes' ):
+    #                n = -1
+    #                
+    #            elif (line[0:9] == '$EndNodes'):
+    #                n = -2
+    #                
+    #            elif  n==-1:
+    #                numNode = int(line)
+    #                nids = {}
+    #                
+    #                if not self.Renumber:
+    #                    for i in xrange(numNode):
+    #                        nids[i]=i
+    #                    return nids
+    #                    
+    #                n = 0
+    #    
+    #            elif n >= 0:
+    #                fields = line.split(' ')
+    #                i = int(fields[0])
+    #                nids[i] = n
+    #                n += 1
+    #            if n>numNode:
+    #                break
+    #          
+    #    if self.Renumber:
+    #        self.nidmap = nids   
+    #                   
+    #    return nids    
                                                               
     def ReadNodes(self):
        
@@ -243,8 +244,8 @@ class GmshInput(object):
                     n = -2
                 elif  n==-1:
                     numNode = int(line)
-                    nodes = np.zeros((numNode,3),float)
-                    nids = {}
+                    nodes = basic.NodeArray() #np.zeros((numNode,3),float)
+                    #nids = {}
                     n = 0
                 elif n >= 0:
                     fields = line.split(' ')
@@ -252,21 +253,22 @@ class GmshInput(object):
                     x = float(fields[1])
                     y = float(fields[2])
                     z = float(fields[3])
-                    nids[i] = n
-                    nodes[n] = np.array([x, y, z])
+                    #nids[i] = n
+                    nodes[i] = np.array([x, y, z])
                     n += 1
                 if n>numNode:
                     break
              
-            if self.Renumber:
-                self.nidmap = nids
+            #if self.Renumber:
+            #    self.nidmap = nids
                                
-            return [nodes,nids]
+            #return [nodes,nids]
+            return nodes
                     
     def ReadElements(self,propMap=None):
             
         f = open( self.Filename, 'r' )
-        elements = []
+        elements = elem.ElementArray() #[]
         
         if ( len(self.PhysIDs) == 0 ):
             AllPIDs = True 
@@ -286,16 +288,16 @@ class GmshInput(object):
                     numElem = int(line)
                     e = 0
                 elif e >= 0:
-                    elem = GmshElement(line)
-                    if ( (elem.physid in self.PhysIDs) or AllPIDs ):
-                        self.RenumberNIDs(elem.conn)
-                        elements.append( elem.ConvertElement() )
+                    elm = GmshElement(line)
+                    if ( (elm.physid in self.PhysIDs) or AllPIDs ):
+                        #self.RenumberNIDs(elem.conn)
+                        elements[elm.eid] =  elm.ConvertElement() 
                     e += 1
                 if e>numElem:
                     break
             
         if ( not propMap == None ):
-            for e in elements:
+            for eid, e in elements.iteritems():
                 try:
                     e.prop = propMap[e.prop]
                 except:
@@ -303,39 +305,39 @@ class GmshInput(object):
                         
         return elements
      
-    def RenumberNIDs(self,nids):
-        if not self.Renumber:
-            return
+    #def RenumberNIDs(self,nids):
+    #    if not self.Renumber:
+    #        return
+    #        
+    #    if self.nidmap == None:
+    #        self.ReadNodeMap()
+    #        
+    #    for i in xrange(len(nids) ):
+    #        ni=nids[i]
+    #        try:
+    #            nids[i] = self.nidmap[ni]  
+    #        except KeyError:
+    #            print 'nid ', i, ' not found in node map for RenumberNIDs()'
+    #    return nids
             
-        if self.nidmap == None:
-            self.ReadNodeMap()
-            
-        for i in xrange(len(nids) ):
-            ni=nids[i]
-            try:
-                nids[i] = self.nidmap[ni]  
-            except KeyError:
-                print 'nid ', i, ' not found in node map for RenumberNIDs()'
-        return nids
-            
-    def RenumberConnectivity(self,nidmap,elements):
-        
-        for e in elements:
-            e.conn = self.RenumberNIDs(e.conn)
-        
-        return elements
-        
-    def RenumberNodeSets(self,nidmap,nsets):
-        
-        if self.nidmap == None:
-            self.ReadNodeMap()
-            
-        for pid, ns in nsets.iteritems():
-            news = set()
-            while ns:
-                i = ns.pop()
-                news.add( nidmap[i] )
-            nsets[pid]=news
+    #def RenumberConnectivity(self,nidmap,elements):
+    #    
+    #    for e in elements:
+    #        e.conn = self.RenumberNIDs(e.conn)
+    #    
+    #    return elements
+    #    
+    #def RenumberNodeSets(self,nidmap,nsets):
+    #    
+    #    if self.nidmap == None:
+    #        self.ReadNodeMap()
+    #        
+    #    for pid, ns in nsets.iteritems():
+    #        news = set()
+    #        while ns:
+    #            i = ns.pop()
+    #            news.add( nidmap[i] )
+    #        nsets[pid]=news
 
 #-----------------------------------------------------------------------------
 #gmshfile = GmshInput('channel.msh')
@@ -352,9 +354,9 @@ class GmshInput(object):
 #gmshfile.AddSideSetIDs( inletPID )
 #gmshfile.AddNodeSetIDs( heatFluxPID )
 # 
-#[nodes,nids] = gmshfile.ReadNodes()  
+#nodes = gmshfile.ReadNodes()  
 #elements = gmshfile.ReadElements()  
 #    
 #nodesets = gmshfile.ReadNodeSets()
 #sidesets = gmshfile.ReadSideSets()
-           
+#           
