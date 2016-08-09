@@ -80,5 +80,14 @@ dofmap.Renumber()
 problem = CoolingChannelProblem()
 K = problem.ComputeStiffness(elements,nodes,dofmap)
 
-#spcs = basic.EssentialBCs()
-#spcs.AddPointValues(dofmap,nodesets[inletPID],[0],[200.0])
+spcs = basic.EssentialBCs()
+spcs.AddPointValues(nodesets[inletPID],[0],[200.0])
+
+force = basic.NaturalBCs()
+force.AddFaceTraction(nodes,sidesets[heatFluxPID],[0],[10.0])
+
+fext = np.zeros( dofmap.NumDof(), basic.FLOAT_TYPE )
+force.AddRHS(dofmap,fext)
+
+[ifix,ival] = spcs.GetIFIX(dofmap)
+[d,freac] = basic.fesolve(K,fext,ifix,ival)

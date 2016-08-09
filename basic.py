@@ -438,8 +438,30 @@ class NaturalBCs(dict):
                 else:  
                     (dict.__getitem__(self,n))[ ldofs[s] ] = vals[s]  
               
-    def AddFaceTrac(self,nodes,sideset,itrac,trac):
-        print 'PointForce.AddFaceTrac() not yet implemented'
+    def AddFaceTraction(self,node,faceelem,itrac,trac):
+        dpn = len(trac)
+        sdim=len(trac)
+        etype=None
+        for e in faceelem:
+            ecoord = node[e.Connectivity()]
+            if ( not etype==e.Type() ):
+                etype = e.Type()
+                qr = e.QuadratureRule(2*(e.Order()))
+                fedim = e.NumNodes()*dpn
+                
+            fe = np.zeros(fedim)
+            for q in xrange(qr[1].size):
+                qpt = qr[0][q]
+                qwt = qr[1][q]
+                N = e.N(qpt)
+                jac = e.Jacobian(ecoord,qpt)
+                for s in xrange(sdim):
+                    fe[s:fedim:sdim] = fe[s:fedim:sdim] + N*trac[s]*jac*qwt
+        
+            ii=0
+            for i in e.Connectivity():
+                self.AddPointValues([i],itrac,fe[ii:ii+sdim])
+                ii += sdim
           
     def AddRHS(self,dofmap,rhs):
         
