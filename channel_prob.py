@@ -61,8 +61,8 @@ wallProp = prop.PropSolid(Matl=wallMat,Region='Solid')
 fluidProp = prop.PropSolid(Matl=fluidMat,Region='Fluid',Avel=1.0)
 props = { channelPID:wallProp, fluidPID:fluidProp }  
 
-#gmshfile.AddPhysicalIDs([channelPID,fluidPID])
-gmshfile.AddPhysicalIDs([channelPID])
+gmshfile.AddPhysicalIDs([channelPID,fluidPID])
+#gmshfile.AddPhysicalIDs([channelPID])
 
 gmshfile.AddSideSetIDs( heatFluxPID )
 gmshfile.AddNodeSetIDs( inletPID )

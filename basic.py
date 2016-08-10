@@ -325,10 +325,16 @@ class DofMap(object):
         try:
             s=[]
             for i in n:
-                s=s.append(self.gid[i])
+                try:
+                    s=s.append(self.gid[i])
+                except KeyError:
+                    s=s.append({})
             return s
         except TypeError:
-            return self.gid[n]
+            try:
+                return self.gid[n]
+            except KeyError:
+                return {}
          
     def ActivateDofs(self,elements,ndof):
         for eid, e in elements.iteritems():
@@ -351,7 +357,11 @@ class DofMap(object):
             I += n
               
     def GID(self,nid,lid=0):
-        return self.gid[nid][lid]
+        try:
+            return self.gid[nid][lid]
+        except KeyError:
+            print 'error in DofMap.GID, lid '+str(lid)+' not defined for node '+str(nid)
+            return KeyError
         
     def NumNodeDof(self,nid=0):
         """Number of dof per node"""
