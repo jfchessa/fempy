@@ -1,9 +1,9 @@
 import numpy as np
 
-import basic
-import element as elem
+#import basic
+#import element as elem
 
-import pdb
+#import pdb
 
 class BiasNone(object):
     """null bias object"""

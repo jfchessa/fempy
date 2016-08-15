@@ -120,7 +120,7 @@ class ElemLine2(object):
     def __init__(self,carray=[],prop=[]):
         self.prop = prop
         assert ( len(carray) == self.NumNodes() ), 'Incorrect number of nodes in connectivity'
-        self.conn = np.array(carray,dtype= INDX_TYPE)
+        self.conn = np.array(carray,dtype= basic.INDX_TYPE)
         
     def __repr__(self):
         return 'Line2 element '+str(self.conn)
@@ -213,7 +213,7 @@ class ElemTruss3D(ElemLine2):
     #def __init__(self,carray=[],prop={}):
     #    self.prop = prop
     #    assert ( len(carray) == self.NumNodes() ), 'Incorrect number of nodes in connectivity'
-    #    self.conn = np.array(carray,dtype= INDX_TYPE)
+    #    self.conn = np.array(carray,dtype= basic.INDX_TYPE)
         
     def __repr__(self):
         return '3D truss element '+str(self.conn)
@@ -232,7 +232,7 @@ class ElemTria3(ElemLine2):
     #def __init__(self,carray,prop=[]):
     #    self.prop = prop
     #    assert ( len(carray) == self.NumNodes() ), 'Incorrect number of nodes in connectivity'
-    #    self.conn = np.array(carray,dtype= INDX_TYPE)
+    #    self.conn = np.array(carray,dtype= basic.INDX_TYPE)
         
     def __repr__(self):
         return 'Tria3 element '+str(self.conn)
@@ -303,7 +303,7 @@ class ElemQuad4(ElemTria3):
     
     #def __init__(self,carray,prop=[]):
     #    self.prop = prop
-    #    self.conn = np.array(carray,dtype= INDX_TYPE)
+    #    self.conn = np.array(carray,dtype= basic.INDX_TYPE)
         
     def __repr__(self):
         return 'Quad4 element '+str(self.conn)
@@ -354,7 +354,7 @@ class ElemTetra4(ElemTria3):
     
     #def __init__(self,carray,prop=[]):
     #    self.prop = prop
-    #    self.conn = np.array(carray,dtype= INDX_TYPE)
+    #    self.conn = np.array(carray,dtype= basic.INDX_TYPE)
         
     def __repr__(self):
         return 'Tetra4 element '+str(self.conn)
@@ -397,7 +397,7 @@ class ElemHexa8(ElemTetra4):
     
     #def __init__(self,carray,prop=[]):
     #    self.prop = prop
-    #    self.conn = np.array(carray,dtype= INDX_TYPE)
+    #    self.conn = np.array(carray,dtype= basic.INDX_TYPE)
         
     def __repr__(self):
         return 'Hexa8 element '+str(self.conn)
@@ -462,14 +462,37 @@ class ElementArray(dict):
         
 class ElementArray(dict):
     
-    def __init__(self,*args):
+    def __init__(self,**kwargs):
         self.elems = {}
-
- 
+        
+        if 'conn' in kwargs:
+            if  ('eids' in kwargs) and ('prop' in kwargs):
+                self.AddConnArray(kwargs['conn'],kwargs['etype'],kwargs['eids'],kwargs['prop'])
+            elif ('eids' in kwargs):
+                self.AddConnArray(kwargs['conn'],kwargs['etype'],kwargs['eids'])
+            elif ('prop' in kwargs):
+                self.AddConnArray(kwargs['conn'],kwargs['etype'],None,kwargs['prop'])
+            else:
+                self.AddConnArray(kwargs['conn'],kwargs['etype'])
+                
     def __repr__(self):
         s='Element Array\n'
         for eid, e in self.iteritems():
             s=s+str(eid)+': ' +str(e)+'\n'
         return s
-        
-               	    	    	              
+    
+    def NumElement(self):
+        return len(self)    
+   
+    def AddConnArray(self,conn,etype,eids=None,prop=0):
+            
+        if eids==None:
+            if len(self)>0:
+                e = max(self.keys())+1
+            else:
+                e=0
+            eids=range( e,e+len(conn) )
+    
+            
+        for e in xrange(len(conn)):    
+            self[ eids[e] ] = etype( conn[e], prop )          	    	    	              

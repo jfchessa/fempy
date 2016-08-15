@@ -1,4 +1,5 @@
-from basic import scatter_matrix, DelayedAssm, fesolve, FeSolver, Point, \
+from basic import FLOAT_TYPE, INDX_TYPE, scatter_matrix, DelayedAssm, \
+              fesolve, FeSolver, Point, \
               NodeArray, DofMap, EssentialBCs, NaturalBCs
 
 from element import sctr_array, elem_jacobian, grad_basis, form_bmat_2d, \

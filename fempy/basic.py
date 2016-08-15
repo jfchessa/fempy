@@ -4,7 +4,7 @@ import numpy as np
 from scipy import sparse
 from scipy.sparse.linalg import dsolve
 
-import pdb
+#import pdb
 
 # numerical type definitions
 FLOAT_TYPE  =  np.float64   # floats
@@ -13,13 +13,14 @@ INDX_TYPE   =  np.int32     # ints for index things
         
         
 def scatter_matrix(ke,Kmat,sctr1,sctr2=None):
-	if ( sctr2==None ):
-		sctr2=sctr1
-	for i in xrange(len(sctr1)):
-		ii=sctr1[i]
-		for j in xrange(len(sctr2)):
-			jj=sctr2[j]
-			Kmat[ii,jj] += ke[i,j]
+    """scatter_matrix(ke,Kmat,sctr1,sctr2=None)"""
+    if ( sctr2==None ):
+        sctr2=sctr1
+    for i in xrange(len(sctr1)):
+        ii=sctr1[i]
+	for j in xrange(len(sctr2)):
+	   jj=sctr2[j]
+	   Kmat[ii,jj] += ke[i,j]
 
 class DelayedAssm(object):
     
@@ -277,8 +278,10 @@ class Point(np.ndarray):
         
 class NodeArray(dict):
     
-    def __init__(self,*args):
+    def __init__(self,**kwargs):
         self.nodes = {}
+        if 'narray' in kwargs:
+            self.AddNodeArray( kwargs['narray'] )
 
     def __repr__(self):
         s='Node Array\n'
@@ -362,6 +365,7 @@ class DofMap(object):
     #                self.ndof += ndof
                     
     def ActivateDofs(self,elements,ldofs,renum=True):
+        """  ActivateDofs(self,elements,ldofs,renum=True) """
         for eid, e in elements.iteritems():
             for n in e.conn:
                 
@@ -398,7 +402,7 @@ class DofMap(object):
         return self.ndof
         
     def LDOFs(self,nid=0):    
-        return np.array( self.gid[n].keys() )
+        return np.array( self.gid[nid].keys() )
             
     def Sctr(self,conn,ldofs=None):
         if ( ldofs==None ):
@@ -413,7 +417,7 @@ class DofMap(object):
         return sctr
 
 class EssentialBCs(dict):
-            
+    """Class to define single point constraints and other constraints"""        
     def __repr__(self):
         s='EssentialBCs\nnid: ldof values\n'
         for n, ldof in self.iteritems():
@@ -421,8 +425,12 @@ class EssentialBCs(dict):
         return s
                 
     def AddPointValues(self,nids,ldofs,vals=None):
-        
-        nspc = len(ldofs)
+        """AddPointValues(self,nids,ldofs,vals=None)"""
+        try:
+            nspc = len(ldofs)
+        except TypeError:
+            nspc = 1
+            ldofs=[ldofs]
         
         if vals==None:
             vals=np.zeros(nspc)
@@ -478,7 +486,13 @@ class NaturalBCs(dict):
         dpn = len(trac)
         sdim=len(trac)
         etype=None
-        for eid, e in faceelem.iteritems():
+        
+        try:
+            eiter = faceelem.values()
+        except AttributeError:
+            eiter = faceelem
+        
+        for e in eiter:
             ecoord = node[e.Connectivity()]
             if ( not etype==e.Type() ):
                 etype = e.Type()
