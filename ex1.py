@@ -9,11 +9,13 @@ class sol101(object):
     def __init__(self):
         self.dofpn=3
         self.sdim=3
+        
     
     def GetCMat(self,e):
         
         mp = mat.MaterialPoint()
         mp['StressState'] = mat.SS3DStress()
+        return e.prop['Matl']
         
     def ComputeStiffnessMat(self,node,element,dofmap):
         
@@ -42,7 +44,7 @@ class sol101(object):
                 ipm = e.BMat(ecoord,qpt)
                 jac = ipm[1]
                 B = ipm[0]
-                ke = ke + np.dot( np.dot(B.T,C), B )*jac*qwt
+                ke = ke + np.dot( np.dot(B.T,C), B )*(jac*qwt)
            
             # scatter ke into K
             kdata.AddLocalMatrix(ke,sctr)
