@@ -2,6 +2,7 @@ import numpy as np
 import fempy as fp
 import fempy.meshing as msh
 import fempy.material as mat
+import fempy.io as io
 
 #-------------------------------------------------------------------------------
 class sol101(object):
@@ -81,5 +82,7 @@ load.AddRHS(dofmap,f)
 problem = sol101()
 K = problem.ComputeStiffnessMat(mesh.node,mesh.element,dofmap)
 
-solver = fp.FeSolver(K)
-solver.Solve(f,spcs)
+ifix = spcs.GetIFIX(dofmap)
+[d,freac]=fp.fesolve(K,f,ifix[0])
+
+dataout = io.FeaData(mesh.node,mesh.element)
