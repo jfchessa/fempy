@@ -15,7 +15,7 @@ class sol101(object):
         
         mp = mat.MaterialPoint()
         mp['StressState'] = mat.SS3DStress()
-        return e.prop['Matl']
+        return e.prop['Matl'].TangentStiffness(mp)
         
     def ComputeStiffnessMat(self,node,element,dofmap):
         
@@ -80,3 +80,6 @@ load.AddRHS(dofmap,f)
 
 problem = sol101()
 K = problem.ComputeStiffnessMat(mesh.node,mesh.element,dofmap)
+
+solver = fp.FeSolver(K)
+solver.Solve(f,spcs)
