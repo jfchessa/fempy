@@ -52,6 +52,34 @@ class sol101(object):
                 
         return kdata.GetCsrMatrix()
 
+    def PostProcess(self,filename,node,element,dofmap,d):
+        
+        mtype = None
+        ne = len(element)
+        stress = np.zeros( (ne,9), float )
+        ee=0
+        for e in element.iteritems():
+            
+            ecoord = node[e.Connectivity()]
+
+            sctr = dofmap.Sctr(e.Connectivity(),range(self.dofpn))
+               
+            if ( not type(e.prop['Matl']) == mtype ):
+                mtype = type(e.prop['Matl'])
+                C = self.GetCMat(e)
+
+            xi = e.CenterPoint() 
+            ipm = e.BMat(ecoord,xi)
+            B = ipm[0]
+            estrain = np.matmul(B,d[sctr])
+            estress = np.matmul(C,estrain)
+            #strain[:,ee]=estrain
+            stress[:len(estress),ee]=estress
+                
+        dataout = io.FeaData(mesh.node,mesh.element)
+        dataout.SetDisplacement(d,dofmap)
+        dataout.SetStress(stress)
+        dataout.WriteVtkFile(filename)
 
 #-------------------------------------------------------------------------------
 L=10
@@ -62,7 +90,7 @@ matl = mat.LinearElasticMat(E=10.0e6,nu=.3)
 prop = fp.PropSolid(Matl=matl)
 
 corners = np.array([[0,0,0],[L,0,0],[L,W,0],[0,W,0],[0,0,H],[L,0,H],[L,W,H],[0,W,H]])
-mesh = msh.MeshHexa8( corners, 11, 6, 3, prop )
+mesh = msh.MeshHexa8( corners, 51, 11, 5, prop )
 
 dofmap = fp.DofMap()
 dofmap.ActivateDofs(mesh.element,[0,1,2])
@@ -85,4 +113,4 @@ K = problem.ComputeStiffnessMat(mesh.node,mesh.element,dofmap)
 ifix = spcs.GetIFIX(dofmap)
 [d,freac]=fp.fesolve(K,f,ifix[0])
 
-dataout = io.FeaData(mesh.node,mesh.element)
+problem.PostProcess("ex1.vtu",mesh.node,mesh.element,dofmap,d)

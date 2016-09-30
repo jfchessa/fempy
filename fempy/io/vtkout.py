@@ -1,5 +1,5 @@
 import numpy as np
-#import fempy as fp
+import fempy as fp
 
 import mayavi.mlab as mlab
 from mayavi import mlab 
@@ -25,9 +25,9 @@ class VtkDataUnstruct(object):
         for e in element.values():
             cellSize = cellSize + e.NumNodes() + 1
             
-        cell = np.zeros( cellSize, dtype=basic.INDX_TYPE )
-        offset = np.zeros( self.numElem, dtype=basic.INDX_TYPE )
-        cell_type = np.zeros( self.numElem, dtype=basic.INDX_TYPE )
+        cell = np.zeros( cellSize, dtype=fp.INDX_TYPE )
+        offset = np.zeros( self.numElem, dtype=fp.INDX_TYPE )
+        cell_type = np.zeros( self.numElem, dtype=fp.INDX_TYPE )
         
         n = 1
         en = 0
@@ -66,8 +66,11 @@ class VtkDataUnstruct(object):
         cell_array = tvtk.CellArray()
         cell_array.set_cells(self.numElem, cell)
         
-        points = np.zeros( (self.numNode,3), dtype=basic.FLOAT_TYPE )
-        points[:,:node.shape[1]] = node
+        points = np.zeros( (self.numNode,3), dtype=fp.FLOAT_TYPE )
+        i=0
+        for n in node.iteritems():
+            points[i,:] = n[1]
+            i += 1
         
         self.ugdata = tvtk.UnstructuredGrid(points=points)
         
@@ -104,10 +107,9 @@ class FeaData(VtkDataUnstruct):
     def __init__(self,node,element):
         self.SetGrid(node,element)
         
-    def SetDisplacement(self,d,dofmap=fp.FixedDofMap(3),ldofs=[0,1,2]):
+    def SetDisplacement(self,d,dofmap,sdim=3):
         nn = len(self.ugdata.points)
         dv = np.zeros( (nn,3), fp.FLOAT_TYPE )
-        sdim = len(ldofs)
         for s in xrange(sdim):
             for i in xrange(nn):
                 ii = dofmap.GID(i,s)
@@ -123,14 +125,14 @@ class FeaData(VtkDataUnstruct):
     def SetStress(self,sig):
         sdim = sig.shape[1]
         ne = self.numElem
-        stress = np.zeros( (ne,9), basic.FLOAT_TYPE )
+        stress = np.zeros( (ne,9), fp.FLOAT_TYPE )
         for i in xrange(sdim):
             stress[:,i] = sig[:,i]
         self.ugdata.cell_data.tensors = stress
         self.ugdata.cell_data.tensors.name = 'Stress'
         
-    def SetData(self,d,dofmap=dmap.FixedDofMap(3),ldofs=[0,1,2],sig=None,svm=None):
-        self.SetDisplacement(d,dofmap,ldofs)
+    def SetData(self,d,dofmap,sdim=3,sig=None,svm=None):
+        self.SetDisplacement(d,dofmap,sdim)
         if ( not sig==None ):
             self.SetStress(sig)
         if ( not svm==None ):
@@ -142,7 +144,7 @@ class ParticleData(VtkDataUnstruct):
             
         self.numNode = len(pts)
         
-        points = np.zeros( (self.numNode,3), dtype=basic.FLOAT_TYPE )
+        points = np.zeros( (self.numNode,3), dtype=fp.FLOAT_TYPE )
         points[:,:pts.shape[1]] = pts
         
         self.ugdata = tvtk.UnstructuredGrid(points=points)   

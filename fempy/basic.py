@@ -320,8 +320,38 @@ class NodeArray(dict):
     def NumNodes(self):
         return len(self)  
         
+    def SDIM(self):
+        return 3
+        
    
-class DofMap(object):
+class DofMapFixed(object):
+    
+    def __init__(self,ndpn=6):
+        self.ndpn=ndpn
+ 
+    def __repr__(self):
+        s='Dof Map Fixed, num dof per node: '+str(self.ndpn)+' \n'
+        return s
+                
+    def GID(self,nid,lid=0):
+        return self.ndpn * nid + lid
+        
+    def LDOFs(self,nid=0):    
+        return np.array(range(self.ndpn),dtype=int)
+            
+    def Sctr(self,conn,ldofs=None):
+        if ( ldofs==None ):
+            ldofs = self.LDOFs()
+            
+        sctr = np.ndarray( len(conn)*len(ldofs), INDX_TYPE )
+        ii = 0
+        for nid in conn:
+            for s in ldofs:
+                sctr[ii] = self.GID(nid,s)
+                ii = ii + 1
+        return sctr   
+        
+class DofMap(DofMapFixed):
     
     def __init__(self,ndpn={}):
         self.gid = {}
@@ -415,6 +445,7 @@ class DofMap(object):
                 sctr[ii] = self.GID(nid,s)
                 ii = ii + 1
         return sctr
+
 
 class EssentialBCs(dict):
     """Class to define single point constraints and other constraints"""        
