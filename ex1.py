@@ -52,13 +52,16 @@ class sol101(object):
                 
         return kdata.GetCsrMatrix()
 
-    def PostProcess(self,filename,node,element,dofmap,d):
+    def PostProcess(self,filename,node,element,dofmap,dd):
         
         mtype = None
         ne = len(element)
         stress = np.zeros( (ne,9), float )
+        svm = np.zeros(ne,float)
         ee=0
-        for e in element.iteritems():
+        for eitr in element.iteritems():
+            
+            e = eitr[1]
             
             ecoord = node[e.Connectivity()]
 
@@ -68,17 +71,24 @@ class sol101(object):
                 mtype = type(e.prop['Matl'])
                 C = self.GetCMat(e)
 
-            xi = e.CenterPoint() 
+            xi = e.QuadratureRule(1)[0][0] 
             ipm = e.BMat(ecoord,xi)
             B = ipm[0]
-            estrain = np.matmul(B,d[sctr])
-            estress = np.matmul(C,estrain)
-            #strain[:,ee]=estrain
-            stress[:len(estress),ee]=estress
+            estrain = np.dot(B,dd[sctr])
+            estress = np.dot(C,estrain)
+            if len(estress)==3:
+                stress[ee,[0,1,3]]=estress
+            else:
+                stress[ee,:len(estress)]=estress
+            svm[ee] = np.sqrt( 0.5*(  (stress[ee,0]-stress[ee,1])**2 + \
+                (stress[ee,1]-stress[ee,2])**2 + (stress[ee,2]-stress[ee,0])**2 + \
+                6*(stress[ee,3]**2 +stress[ee,4]**2+stress[ee,5]**2)  ) )
+            ee += 1
                 
         dataout = io.FeaData(mesh.node,mesh.element)
-        dataout.SetDisplacement(d,dofmap)
+        dataout.SetDisplacement(dd,dofmap)
         dataout.SetStress(stress)
+        dataout.AddCellScalarField(svm,"mises")
         dataout.WriteVtkFile(filename)
 
 #-------------------------------------------------------------------------------

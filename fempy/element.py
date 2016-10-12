@@ -157,6 +157,9 @@ class ElemLine2(object):
         qpt, qwt =  quad.quadrature_gauss1d(n)
         return [ np.reshape(qpt,(len(qpt),1)), qwt ]
         
+    def CenterPoint(self):
+        return self.QuadratureRule(1)[0][0]
+        
     def N(self,pt=None):
         if ( pt==None ):
             pt = np.zeros( self.ElemDim(), dtype=basic.FLOAT_TYPE )
