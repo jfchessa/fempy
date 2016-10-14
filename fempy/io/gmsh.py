@@ -1,6 +1,7 @@
 import numpy as np
-import basic
-import element as elem
+#import basic
+#import element as elem
+import fempy as fp
 
 #import pdb
 
