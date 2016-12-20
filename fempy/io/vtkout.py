@@ -15,6 +15,9 @@ class VtkDataUnstruct(object):
     
     def SetGrid(self,node,element):
             
+        if type(node) != fp.basic.NodeArray:
+            node = fp.NodeArray(narray=node)
+   
         self.numElem = len(element)
         self.numNode = len(node)
         
@@ -59,6 +62,8 @@ class VtkDataUnstruct(object):
                 cell_type[en] = 12
             elif ( e.Type() == 'HEXA20' ): 
                 cell_type[en] = 25
+            elif ( e.Type() == 'POINT1' ): 
+                cell_type[en] = 1
                 
             n = n + nn + 1
             en = en + 1
@@ -140,20 +145,29 @@ class FeaData(VtkDataUnstruct):
                     
 class ParticleData(VtkDataUnstruct):
     
+    def __init__(self,pts=None):
+        if pts!=None:
+            self.SetPoints(pts)
+    
     def SetPoints(self,pts):
             
         self.numNode = len(pts)
         
-        points = np.zeros( (self.numNode,3), dtype=fp.FLOAT_TYPE )
-        points[:,:pts.shape[1]] = pts
+        #points = np.zeros( (self.numNode,3), dtype=fp.FLOAT_TYPE )
+        #points[:,:pts.shape[1]] = pts
         
-        self.ugdata = tvtk.UnstructuredGrid(points=points)   
+        #self.ugdata = tvtk.UnstructuredGrid(points=points)   
+        
+        conn = fp.ElementArray( 
+             conn=np.array([range(self.numNode)],dtype=int).transpose(),
+             etype=fp.ElemPoint1 )
+        self.SetGrid(pts,conn)
     
     def SetParticleData(self,d,x,v):
         self.SetPoints(x)
         self.AddNodeScalarField(d,'Diameter')
         self.AddNodeVectorField(v,'Velocity')
 
-    def WriteVtkFile(self,job,step):
+    def WriteVtkFile(self,job,step=0):
         write_data( self.ugdata, job+str(step).zfill(4)+'.vtu' )    
     

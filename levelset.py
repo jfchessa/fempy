@@ -71,7 +71,7 @@ def sdistpt2tri(pt,nodes):
     
     v=pt-n1
     
-    A=np.array([a,b,n]) # A = [a;b;n]
+    A=np.array([a,b,n]) # A = [a;b;n]  transpose?
     xiv=np.linalg.solve(A,v) # v/A;
     A1=xiv[0]
     A2=xiv[1]
@@ -163,11 +163,10 @@ nny=2
 zlsnodes = msh.node_array2d(zlscorners,nnx,nny)
 zlsconn = np.concatenate ( ( msh.gen_conn2d(np.array([0,1,nnx],dtype=int),nnx-1,nny-1),
       msh.gen_conn2d(np.array([1,nnx+1,nnx],dtype=int),nnx-1,nny-1) ), axis=0 )
-      
+   
 phi = mshgenls( zlsnodes, zlsconn, nodes )
 
-dataout = io.FeaData(nodes)
-dataout.SetDisplacement(dd,dofmap)
-dataout.SetStress(stress)
-dataout.AddCellScalarField(svm,"mises")
-dataout.WriteVtkFile(filename)
+dataout = io.ParticleData()
+dataout.SetPoints(nodes)
+dataout.AddNodeScalarField(phi,'Level Set')
+dataout.WriteVtkFile('lstest')

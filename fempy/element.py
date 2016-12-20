@@ -112,24 +112,24 @@ def form_bmat_3d(dndx):
 
 #######################################################################
 #
-#  1 D   E L E M E N T S
+#  0 D   E L E M E N T S
 #
-
-class ElemLine2(object):
+class ElemPoint1(object):
     
+
     def __init__(self,carray=[],prop=[]):
         self.prop = prop
         assert ( len(carray) == self.NumNodes() ), 'Incorrect number of nodes in connectivity'
         self.conn = np.array(carray,dtype= basic.INDX_TYPE)
-        
+    
     def __repr__(self):
-        return 'Line2 element '+str(self.conn)
+        return 'Point1 element '+str(self.conn)
         
     def Type(self):
-        return 'LINE2'
+        return 'POINT1'
         
     def NumNodes(self):
-        return 2
+        return 1
 
     def Connectivity(self):
         return self.conn
@@ -142,6 +142,36 @@ class ElemLine2(object):
         
     def Material(self):
         return self.prop['Matl']
+        
+    def ElemDim(self):
+        return 0
+        
+    def Order(self):
+        return 1
+        
+    def Topology(self):
+        return 'Point'
+        
+#######################################################################
+#
+#  1 D   E L E M E N T S
+#
+
+class ElemLine2(ElemPoint1):
+    
+#    def __init__(self,carray=[],prop=[]):
+#        self.prop = prop
+#        assert ( len(carray) == self.NumNodes() ), 'Incorrect number of nodes in connectivity'
+#        self.conn = np.array(carray,dtype= basic.INDX_TYPE)
+        
+    def __repr__(self):
+        return 'Line2 element '+str(self.conn)
+        
+    def Type(self):
+        return 'LINE2'
+        
+    def NumNodes(self):
+        return 2
         
     def ElemDim(self):
         return 1
