@@ -1,6 +1,7 @@
 import numpy as np
-import basic
-import element as elem
+#import basic
+#import element as elem
+import fempy as fp
 
 #import pdb
 
@@ -30,19 +31,19 @@ class GmshElement(object):
             
     def ConvertElement(self):
         if self.etype == 1:
-            return elem.ElemLine2(self.conn,self.physid)
+            return fp.ElemLine2(self.conn,self.physid)
             
         elif self.etype == 2:
-            return elem.ElemTria3(self.conn,self.physid)
+            return fp.ElemTria3(self.conn,self.physid)
             
         elif self.etype == 3:
-            return elem.ElemQuad4(self.conn,self.physid)
+            return fp.ElemQuad4(self.conn,self.physid)
             
         elif self.etype == 4:
-            return elem.ElemTetra4(self.conn,self.physid)
+            return fp.ElemTetra4(self.conn,self.physid)
             
         elif self.etype == 5:
-            return elem.ElemHexa8(self.conn,self.physid)
+            return fp.ElemHexa8(self.conn,self.physid)
             
         else:
             print 'Element type not supported in GmshElement.ConvertElement'
@@ -244,7 +245,7 @@ class GmshInput(object):
                     n = -2
                 elif  n==-1:
                     numNode = int(line)
-                    nodes = basic.NodeArray() #np.zeros((numNode,3),float)
+                    nodes = fp.NodeArray() #np.zeros((numNode,3),float)
                     #nids = {}
                     n = 0
                 elif n >= 0:
@@ -268,7 +269,7 @@ class GmshInput(object):
     def ReadElements(self,propMap=None):
             
         f = open( self.Filename, 'r' )
-        elements = elem.ElementArray() #[]
+        elements = fp.ElementArray() #[]
         
         if ( len(self.PhysIDs) == 0 ):
             AllPIDs = True 

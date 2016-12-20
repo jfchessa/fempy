@@ -88,7 +88,7 @@ class sol101(object):
         dataout = io.FeaData(mesh.node,mesh.element)
         dataout.SetDisplacement(dd,dofmap)
         dataout.SetStress(stress)
-        dataout.AddCellScalarField(svm,"mises")
+        dataout.SetEffectiveStress(svm)
         dataout.WriteVtkFile(filename)
 
 #-------------------------------------------------------------------------------
