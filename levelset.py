@@ -67,12 +67,11 @@ def sdistpt2tri(pt,nodes):
     b=n3-n1
     n=np.cross(a,b)
     n=n/np.linalg.norm(n)
-    #n4=n1+n
     
     v=pt-n1
     
     A=np.array([a,b,n]) # A = [a;b;n]  transpose?
-    xiv=np.linalg.solve(A,v) # v/A;
+    xiv=np.linalg.solve(A.transpose(),v) # v/A;
     A1=xiv[0]
     A2=xiv[1]
     A3=1-A1-A2
@@ -134,11 +133,12 @@ def mshgenls(node,element,lspts):
     """
     phi = np.zeros( len(lspts), dtype=float )
     n=0
-    for pt in lspts:
+    for nid, pt in lspts.iteritems():
         dmin = 10.0e10
         
-        for tri in element:
-            de = sdistpt2tri(pt,node[tri])
+        for eid, elem in element.iteritems():
+            tri = elem.Connectivity()
+            de = sdistpt2tri(pt,node.CoordMat(tri))
             
             if ( abs(de) < abs(dmin) ):
                 dmin = de
@@ -149,24 +149,21 @@ def mshgenls(node,element,lspts):
     return phi
         
 #######################################################
-L=10
-W=10
-H=10
 
-corners = np.array([[0,0,0],[L,0,0],[L,W,0],[0,W,0],
-                    [0,0,H],[L,0,H],[L,W,H],[0,W,H]])
-nodes = msh.node_array3d(corners,2,2,2)
+# read in zero level set
+zlsfile = io.GmshInput('fiber.msh')
+zlsnodes = zlsfile.ReadNodes()
+zlselem = zlsfile.ReadElements()
 
-zlscorners = np.array([[0,0,H/2],[L,0,H/2],[L,W,H/2],[0,W,H/2]])
-nnx=2
-nny=2
-zlsnodes = msh.node_array2d(zlscorners,nnx,nny)
-zlsconn = np.concatenate ( ( msh.gen_conn2d(np.array([0,1,nnx],dtype=int),nnx-1,nny-1),
-      msh.gen_conn2d(np.array([1,nnx+1,nnx],dtype=int),nnx-1,nny-1) ), axis=0 )
-   
-phi = mshgenls( zlsnodes, zlsconn, nodes )
 
-dataout = io.ParticleData()
-dataout.SetPoints(nodes)
-dataout.AddNodeScalarField(phi,'Level Set')
-dataout.WriteVtkFile('lstest')
+corners = zlsnodes.Corners()
+corners[:,2] = 5*corners[:,2]
+
+grid = msh.MeshHexa8(corners,51,51,26)
+    
+#phi = mshgenls( zlsnodes, zlselem, grid.NodeArray() )
+
+#dataout = io.ParticleData()
+#dataout.SetPoints(nodes)
+#dataout.AddNodeScalarField(phi,'Level Set')
+#dataout.WriteVtkFile('lstest')

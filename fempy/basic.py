@@ -323,6 +323,48 @@ class NodeArray(dict):
     def SDIM(self):
         return 3
         
+    def XYZRange(self):
+        """returns the  x, y and z range of the nodes in the array"""
+        
+        for nid, node in self.iteritems():
+            xmin=node[0]
+            xmax=node[0]
+            ymin=node[1]
+            ymax=node[1]
+            zmin=node[2]
+            zmax=node[2]
+            break
+        
+        for nid, node in self.iteritems():
+            if xmin>node[0]:
+                xmin=node[0]
+            elif xmax<node[0]:
+                xmax=node[0]
+                
+            if ymin>node[1]:
+                ymin=node[1]
+            elif ymax<node[1]:
+                ymax=node[1]
+                
+            if zmin>node[2]:
+                zmin=node[2]
+            elif zmax<node[2]:
+                zmax=node[2]
+        
+        return [[xmin,xmax],[ymin,ymax],[zmin,zmax]]
+        
+    def Corners(self):
+        """returns the corner verticies of the node array"""
+        r = self.XYZRange()
+        corners = np.array( [[ r[0][0], r[1][0], r[2][0] ],
+                             [ r[0][1], r[1][0], r[2][0] ],
+                             [ r[0][1], r[1][1], r[2][0] ],
+                             [ r[0][0], r[1][1], r[2][0] ],
+                             [ r[0][0], r[1][0], r[2][1] ],
+                             [ r[0][1], r[1][0], r[2][1] ],
+                             [ r[0][1], r[1][1], r[2][1] ],
+                             [ r[0][0], r[1][1], r[2][1] ] ] )
+        return corners
    
 class DofMapFixed(object):
     

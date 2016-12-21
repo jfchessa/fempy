@@ -223,7 +223,28 @@ class MeshQuad4(object):
             enorm = enorm/np.linalg.norm(enorm)
             normals.append(enorm)
         return normals
-     
+        
+class MeshTria3(MeshQuad4):
+    
+    def __init__(self,corners,n1,n2,prop=0,bias1=BiasNone(),bias2=BiasNone()):
+         
+        # define nodes
+        ncoord = node_array2d(corners,n1,n2,bias1,bias2)
+        self.node = fp.NodeArray( narray=ncoord )
+        
+        # define elements
+        ptrn1 = np.array( [0,1,n1], dtype=fp.INDX_TYPE )
+        ptrn2 = np.array( [n1+1,n1,1], dtype=fp.INDX_TYPE )
+        #conn = gen_conn2d(ptrn,n1-1,n2-1)
+        conn = np.concatenate ( ( msh.gen_conn2d(ptrn1,n1-1,n2-1),
+                 msh.gen_conn2d(ptrn,n1-1,n2-1) ), axis=0 )
+        self.element = fp.ElementArray(conn=conn,etype=fp.ElemQuad4,prop=prop)
+        
+        
+    def NumElem(self):
+        return 2*(self.n1-1) * (self.n2-1)
+    
+          
     
 class MeshHexa8(MeshQuad4):
     
