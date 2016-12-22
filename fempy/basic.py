@@ -323,6 +323,20 @@ class NodeArray(dict):
     def SDIM(self):
         return 3
         
+    def ContinousNIDMap(self):
+        """returns a map of node id to the location in the map ordering. 
+        This is useful if you need to address the nodes in zero offset and
+        continous numberng form."""
+        nmap = dict()
+        
+        n=0
+        for nid in self.iteritems():
+            nmap[nid] = n
+            n += 1
+            
+        return nmap
+        
+        
     def XYZRange(self):
         """returns the  x, y and z range of the nodes in the array"""
         

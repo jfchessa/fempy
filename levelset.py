@@ -165,20 +165,56 @@ def mshgenls(node,element,lspts):
       LSPTS - a node coordinate matrix of the points where the level set is
               to be computed
     """
+    
+    # find zls element midpoints and normals
+    ne = len(element)
+    midpts = np.zeros( (ne,3), dtype=float )
+    midn =   np.zeros( (ne,3), dtype=float )
+    i=0
+    for e, elem in zlselem.iteritems():
+        
+        tri = elem.Connectivity()
+    
+        a = node[tri[1]] - node[tri[0]]
+        b = node[tri[2]] - node[tri[0]]
+        n = np.cross(a,b)
+        n = n/np.linalg.norm(n)
+    
+        mp = np.average( node[tri], axis=0 )
+        
+        midpts[i] = mp
+        midn[i] = n
+        i += 1
+    
     phi = np.zeros( len(lspts), dtype=float )
     n=0
     for nid, pt in lspts.iteritems():
         dmin = 10.0e10
         
-        for eid, elem in element.iteritems():
-            tri = elem.Connectivity()
-            de = sdistq(pt,node.CoordMat(tri)) #sdistpt2tri(pt,node.CoordMat(tri))
-            
+        for i in xrange(ne):
+            v = pt - midpts[i]
+            de = np.dot(v,midn[i])
+              
             if ( abs(de) < abs(dmin) ):
                 dmin = de
                 
         phi[n] = dmin
         n += 1
+        
+        
+    #n=0
+    #for nid, pt in lspts.iteritems():
+    #    dmin = 10.0e10
+    #    
+    #    for eid, elem in element.iteritems():
+    #        tri = elem.Connectivity()
+    #        de = sdistq(pt,node.CoordMat(tri)) #sdistpt2tri(pt,node.CoordMat(tri))
+    #        
+    #        if ( abs(de) < abs(dmin) ):
+    #            dmin = de
+    #            
+    #    phi[n] = dmin
+    #    n += 1
         
     return phi
         

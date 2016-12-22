@@ -21,6 +21,8 @@ class VtkDataUnstruct(object):
         self.numElem = len(element)
         self.numNode = len(node)
         
+        nidmap = node.ContinousNIDMap()
+        
         # generate the VTK cell data.  This is a linear array of integers
         # where the first number in a pattern is the number of nodes in the 
         # connectivity followed by the connectivity
@@ -38,7 +40,8 @@ class VtkDataUnstruct(object):
         
             nn = e.NumNodes()
             cell[n-1] = nn
-            cell[n:n+nn] = e.conn
+            for i in xrange(nn):
+                cell[n+i] = nidmap[ e.conn[i] ] 
         
             offset[en]= n-1
                     
