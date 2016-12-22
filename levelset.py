@@ -120,6 +120,40 @@ def sdistpt2tri(pt,nodes):
     return sdist
 
     
+def sdistq(pt,nodes):
+    """
+    Computes the signed distance to the midpoint of a triangle
+    
+        SDIST -  the signed distance
+        CP -  the coordinates of the closest point on the finite triangle to
+              the point
+        PT - the row vector containing the coordiants of the point
+        N1, N2, N3 - the row vectors containing the coordiants of the verticies 
+                     of the triangle.  
+  
+    The sign convention is such that the sign is positive if the point is
+    in the positive direction w.r.t to the outward normal of the triangle.
+    The outward normal is defined in the right handed sense of the node
+    numbering of N1, N2, N3.
+
+    written by: Jack Chessa, jfchessa@utep.edu
+    """
+    n1 = nodes[0]
+    n2 = nodes[1]
+    n3 = nodes[2]
+    
+    a=n2-n1
+    b=n3-n1
+    n=np.cross(a,b)
+    n=n/np.linalg.norm(n)
+    
+    mp = np.average( nodes, axis=0 )
+    
+    v = pt-mp
+    sdist = np.dot(v,n)
+    
+    return sdist
+
 def mshgenls(node,element,lspts):
     """
     Generates a level set function from a triagulated mesh of a zero
@@ -138,7 +172,7 @@ def mshgenls(node,element,lspts):
         
         for eid, elem in element.iteritems():
             tri = elem.Connectivity()
-            de = sdistpt2tri(pt,node.CoordMat(tri))
+            de = sdistq(pt,node.CoordMat(tri)) #sdistpt2tri(pt,node.CoordMat(tri))
             
             if ( abs(de) < abs(dmin) ):
                 dmin = de
@@ -159,11 +193,13 @@ zlselem = zlsfile.ReadElements()
 corners = zlsnodes.Corners()
 corners[:,2] = 5*corners[:,2]
 
-grid = msh.MeshHexa8(corners,51,51,26)
+grid = msh.MeshHexa8(corners,11,11,7)
     
-#phi = mshgenls( zlsnodes, zlselem, grid.NodeArray() )
+phi = mshgenls( zlsnodes, zlselem, grid.NodeArray() )
 
-#dataout = io.ParticleData()
-#dataout.SetPoints(nodes)
-#dataout.AddNodeScalarField(phi,'Level Set')
-#dataout.WriteVtkFile('lstest')
+dataout = io.FeaData(grid.NodeArray(),grid.ElementArray())
+dataout.AddNodeScalarField(phi,'Level Set')
+dataout.WriteVtkFile('lstest')
+
+dataout1 = io.FeaData(zlsnodes,zlselem)
+dataout1.WriteVtkFile('zls')
